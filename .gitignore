@@ -8,8 +8,8 @@ dist/
 # Environment
 .env
 
-# Uploads (local files)
-uploads/
+# Uploads (local files only, not source code)
+/uploads/
 
 # IDE
 .idea/

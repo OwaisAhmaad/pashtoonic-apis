@@ -7,6 +7,7 @@ import configuration from './config/configuration';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { HealthController } from './health/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PoetryModule } from './modules/poetry/poetry.module';
@@ -60,6 +61,7 @@ import { FeedModule } from './modules/feed/feed.module';
     SearchModule,
     FeedModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
