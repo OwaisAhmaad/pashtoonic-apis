@@ -1,21 +1,19 @@
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import { ValidationPipe, INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import helmet from 'helmet';
-import { AppModule } from '../src/app.module';
 import type { Request, Response } from 'express';
 
-// Cached across warm invocations
-let cachedApp: INestApplication | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let cachedServer: any = null;
 
 async function bootstrap() {
-  if (cachedApp && cachedServer) return cachedServer;
+  if (cachedServer) return cachedServer;
 
-  // Create express server INSIDE bootstrap so no top-level failures
+  await import('reflect-metadata');
+  const { NestFactory } = await import('@nestjs/core');
+  const { ExpressAdapter } = await import('@nestjs/platform-express');
+  const { ValidationPipe } = await import('@nestjs/common');
+  const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
+  const helmet = (await import('helmet')).default;
+  const { AppModule } = await import('../src/app.module');
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const expressInstance = require('express')();
 
@@ -25,12 +23,7 @@ async function bootstrap() {
     { logger: ['error', 'warn', 'log'] },
   );
 
-  app.use(
-    helmet({
-      contentSecurityPolicy: false,
-      crossOriginEmbedderPolicy: false,
-    }),
-  );
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
   app.enableCors({
     origin: '*',
@@ -51,7 +44,8 @@ async function bootstrap() {
     .setTitle('PASHTOONIC API')
     .setDescription(
       'PASHTOONIC — A digital literary ecosystem for ~50-60M Pashto speakers globally. ' +
-        'Pashto poetry platform | Languages: ps, ur, en | v1.0.0',
+        'Powers Pashto poetry platform with user content, moderation, gamification, and social features. ' +
+        'Supported languages: Pashto (ps), Urdu (ur), English (en). API Version: 1.0.0',
     )
     .setVersion('1.0.0')
     .addBearerAuth()
@@ -60,18 +54,15 @@ async function bootstrap() {
     .addTag('Search').addTag('Feed')
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig), {
     swaggerOptions: { persistAuthorization: true },
   });
 
   await app.init();
-  cachedApp = app;
   cachedServer = expressInstance;
-  return expressInstance;
+  return cachedServer;
 }
 
-// Catch unhandled promise rejections at process level
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
 });
