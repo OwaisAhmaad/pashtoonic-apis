@@ -30,6 +30,12 @@ import { FeedModule } from './modules/feed/feed.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         uri: config.get<string>('database.uri'),
+        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 30000,
+        maxPoolSize: 5,
+        minPoolSize: 1,
+        retryWrites: true,
       }),
     }),
 

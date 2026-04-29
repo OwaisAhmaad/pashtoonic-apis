@@ -2,31 +2,32 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { ValidationPipe, INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const express = require('express');
 import { AppModule } from '../src/app.module';
-import type { Express, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
-const expressServer: Express = express();
+// Cached across warm invocations
 let cachedApp: INestApplication | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let cachedServer: any = null;
 
-async function bootstrap(): Promise<Express> {
-  if (cachedApp) return expressServer;
+async function bootstrap() {
+  if (cachedApp && cachedServer) return cachedServer;
+
+  // Create express server INSIDE bootstrap so no top-level failures
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const expressInstance = require('express')();
 
   const app = await NestFactory.create(
     AppModule,
-    new ExpressAdapter(expressServer),
+    new ExpressAdapter(expressInstance),
     { logger: ['error', 'warn', 'log'] },
   );
 
-  const config = app.get(ConfigService);
-
   app.use(
     helmet({
-      contentSecurityPolicy: false, // allow Swagger UI
+      contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
     }),
   );
@@ -50,7 +51,7 @@ async function bootstrap(): Promise<Express> {
     .setTitle('PASHTOONIC API')
     .setDescription(
       'PASHTOONIC — A digital literary ecosystem for ~50-60M Pashto speakers globally. ' +
-      'Pashto poetry platform | Languages: ps, ur, en | v1.0.0',
+        'Pashto poetry platform | Languages: ps, ur, en | v1.0.0',
     )
     .setVersion('1.0.0')
     .addBearerAuth()
@@ -66,8 +67,14 @@ async function bootstrap(): Promise<Express> {
 
   await app.init();
   cachedApp = app;
-  return expressServer;
+  cachedServer = expressInstance;
+  return expressInstance;
 }
+
+// Catch unhandled promise rejections at process level
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});
 
 export default async (req: Request, res: Response): Promise<void> => {
   try {
@@ -75,10 +82,13 @@ export default async (req: Request, res: Response): Promise<void> => {
     server(req, res);
   } catch (err) {
     console.error('Bootstrap error:', err);
-    res.status(500).json({
-      statusCode: 500,
-      message: 'Server initialization failed',
-      error: err instanceof Error ? err.message : String(err),
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        statusCode: 500,
+        message: 'Server initialization failed',
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack?.split('\n').slice(0, 5) : undefined,
+      });
+    }
   }
 };
