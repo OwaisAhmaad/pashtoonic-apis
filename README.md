@@ -1,45 +1,65 @@
-# PASHTOONIC API
+# پښتونیک API — PASHTOONIC
 
-A production-ready NestJS backend for **PASHTOONIC** — a digital literary ecosystem for ~50-60M Pashto speakers globally.
+> **زموږ خپل غږ** — *Our Own Voice*
 
-## Tech Stack
+Production-ready NestJS backend for **PASHTOONIC** — a digital literary ecosystem serving ~50–60 million Pashto speakers across Pakistan, Afghanistan, and the global diaspora.
 
-- **Framework:** NestJS (modular monolith)
-- **Database:** MongoDB via Mongoose
-- **Auth:** JWT (RS256, 15min access + 7-day refresh with rotation)
-- **File Uploads:** Multer (disk storage, S3-ready)
-- **Docs:** Swagger/OpenAPI at `/api/docs`
-- **Logging:** nestjs-pino (JSON in production, pretty in dev)
-- **Security:** Helmet, CORS, Throttler rate limiting
+Live API: **https://pashtoonic-apis.vercel.app**
+Swagger docs: **https://pashtoonic-apis.vercel.app/api/docs**
 
-## Quick Start
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | NestJS 10 (modular monolith) |
+| **Language** | TypeScript (strict) |
+| **Database** | MongoDB via Mongoose |
+| **Auth** | JWT RS256 — 15 min access + 7-day refresh with rotation |
+| **File Uploads** | Multer disk storage (S3-ready) |
+| **API Docs** | Swagger/OpenAPI at `/api/docs` |
+| **Logging** | nestjs-pino — JSON in prod, pretty in dev |
+| **Security** | Helmet, CORS, Throttler rate limiting |
+| **Deployment** | Vercel Serverless (Express adapter + handler caching) |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js ≥ 20
+- MongoDB (local or Atlas)
+
+### Setup
 
 ```bash
-# 1. Install dependencies
+# 1. Clone and install
+git clone https://github.com/OwaisAhmaad/pashtoonic-apis
+cd pashtoonic-apis
 npm install
 
-# 2. Copy env file
+# 2. Configure environment
 cp .env.example .env
-# Edit .env with your MongoDB URI and JWT secrets
+# Edit .env — set MONGODB_URI and JWT secrets at minimum
 
-# 3. Start MongoDB (local)
-mongod
-
-# 4. Run in development
+# 3. Start in development
 npm run start:dev
 
-# 5. View API docs
+# 4. Open Swagger docs
 open http://localhost:3000/api/docs
 ```
 
-## Environment Variables
+---
+
+## ⚙️ Environment Variables
 
 | Variable | Description | Default |
 |---|---|---|
 | `PORT` | Server port | `3000` |
 | `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/pashtoonic` |
-| `JWT_SECRET` | JWT signing secret (min 32 chars) | — |
-| `JWT_REFRESH_SECRET` | Refresh token secret (min 32 chars) | — |
+| `JWT_SECRET` | Access token signing secret (min 32 chars) | — |
+| `JWT_REFRESH_SECRET` | Refresh token signing secret (min 32 chars) | — |
 | `JWT_EXPIRES_IN` | Access token TTL | `15m` |
 | `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL | `7d` |
 | `MAX_AVATAR_SIZE_MB` | Max avatar upload size | `5` |
@@ -48,28 +68,56 @@ open http://localhost:3000/api/docs
 | `STATIC_URL` | Static file URL prefix | `/static` |
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins | `*` |
 
-## API Modules
+---
+
+## 📡 API Modules
 
 | Module | Base Path | Description |
 |---|---|---|
-| Auth | `/v1/auth` | Register, login, refresh, logout |
-| Users | `/v1/users` | Profiles, follows, poetry |
-| Poetry | `/v1/poetry` | CRUD, search, featured, trending |
-| Poets | `/v1/poets` | Verified poet profiles |
-| Social | `/v1/poetry/:id/...` | Likes, comments, reviews, follows |
-| Admin | `/v1/admin` | Moderation queue, analytics |
-| Uploads | `/v1/uploads` | Avatar, poetry images, audio |
-| Gamification | `/v1/users/me/level` | XP, levels, badges |
-| Search | `/v1/search` | Full-text + faceted search |
-| Feed | `/v1/feed` | Personalized & explore feeds |
+| **Auth** | `POST /v1/auth/register` | Register a new user |
+| | `POST /v1/auth/login` | Login, returns token pair |
+| | `POST /v1/auth/refresh` | Rotate refresh token |
+| | `POST /v1/auth/logout` | Invalidate refresh token |
+| **Users** | `GET /v1/users/me` | Get own profile |
+| | `PATCH /v1/users/me` | Update own profile |
+| | `GET /v1/users/:id` | Get public profile |
+| | `POST /v1/users/:id/follow` | Follow a user |
+| **Poetry** | `GET /v1/poetry` | Paginated feed (cursor-based) |
+| | `POST /v1/poetry` | Submit a poem (JWT required) |
+| | `GET /v1/poetry/:id` | Get single poem |
+| | `POST /v1/poetry/:id/likes` | Toggle like |
+| | `GET /v1/poetry/:id/comments` | Get comments |
+| | `POST /v1/poetry/:id/comments` | Post a comment |
+| | `GET /v1/poetry/:id/reviews` | Get review summary |
+| | `POST /v1/poetry/:id/reviews` | Submit a review (1–5 stars) |
+| | `GET /v1/poetry/trending` | Trending poems |
+| | `GET /v1/poetry/featured` | Featured poems |
+| **Search** | `GET /v1/search?q=` | Full-text search (title + content) |
+| **Feed** | `GET /v1/feed` | Personalised feed |
+| | `GET /v1/feed/explore` | Explore / discovery feed |
+| **Admin** | `GET /v1/admin/analytics` | Platform analytics |
+| | `PATCH /v1/poetry/:id/approve` | Approve pending poem |
+| | `PATCH /v1/poetry/:id/reject` | Reject pending poem |
+| **Uploads** | `POST /v1/uploads/avatar` | Upload avatar image |
+| | `POST /v1/uploads/audio` | Upload audio file |
+| **Gamification** | `GET /v1/users/me/level` | XP, level, next threshold |
+| **Health** | `GET /v1/health` | Liveness check |
 
-## Roles
+---
 
-- `USER` — Default role for all registered users
-- `MODERATOR` — Can moderate poems and poets
-- `ADMIN` — Full access including role assignment
+## 👥 Roles
 
-## XP System
+| Role | Permissions |
+|---|---|
+| `USER` | Read, submit poems, like, comment, review |
+| `MODERATOR` | + Approve/reject poems, manage poet profiles |
+| `ADMIN` | + Full access, role assignment, analytics |
+
+---
+
+## 🏆 Gamification
+
+**XP earned per action:**
 
 | Action | XP |
 |---|---|
@@ -79,130 +127,64 @@ open http://localhost:3000/api/docs
 | Review submitted | +10 |
 | Follower gained | +3 |
 
-## Level Thresholds
+**Level thresholds:**
 
-| Level | Min XP |
-|---|---|
-| Newcomer | 0 |
-| Emerging Voice | 100 |
-| Rising Poet | 500 |
-| Established Poet | 2,000 |
-| Master Poet | 10,000 |
+| Level | Title | Min XP |
+|---|---|---|
+| 1 | Newcomer | 0 |
+| 2 | Emerging Voice | 100 |
+| 3 | Rising Poet | 500 |
+| 4 | Established Poet | 2,000 |
+| 5 | Master Poet | 10,000 |
 
-## File Uploads
+---
+
+## 📁 File Uploads
 
 Files are stored in `./uploads/{avatars,poetry-images,audio}/` with UUID filenames.
 Served statically at `/static/{folder}/{filename}`.
 
-## Development
+To switch to S3, replace `diskStorage` in `uploads.service.ts` with `multer-s3`.
+
+---
+
+## 🧪 Testing
 
 ```bash
-npm run start:dev    # Watch mode
-npm run build        # Production build
-npm run start:prod   # Run production build
-npm run test         # Unit tests
-npm run test:e2e     # E2E tests
+npm run test          # Unit tests
+npm run test:e2e      # End-to-end tests (requires running MongoDB)
+npm run test:cov      # Coverage report
 ```
 
-## API Documentation
+---
 
-Full interactive Swagger docs available at: **http://localhost:3000/api/docs**
-
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## 📦 Scripts
 
 ```bash
-$ npm install
+npm run start:dev     # Development (watch mode)
+npm run build         # Production build → dist/
+npm run start:prod    # Run compiled build
+npm run lint          # ESLint
 ```
 
-## Compile and run the project
+---
+
+## ☁️ Deployment (Vercel)
+
+The API is deployed as a **serverless function** on Vercel using the `ExpressAdapter` pattern with handler caching to avoid cold-start reconnections.
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Deploy via Vercel CLI
+vercel --prod
 ```
 
-## Run tests
+Key Vercel config (`vercel.json`):
+- All routes rewrite to `/api/index`
+- Handler is cached on module scope (not per invocation)
+- MongoDB connection reused across warm invocations
 
-```bash
-# unit tests
-$ npm run test
+---
 
-# e2e tests
-$ npm run test:e2e
+## 📄 License
 
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT © PASHTOONIC
